@@ -1,0 +1,44 @@
+# .github/workflows/dev-deploy.yaml
+
+name: Terraform Deploy - DEV
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment environment"
+        required: true
+        default: "dev"
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (Assume Role from ACC A - DEV)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_B }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_B }}
+          role-to-assume: arn:aws:iam::ACCOUNT_A_ID_DEV:role/TerraformBucketRole
+          role-session-name: github-dev-session
+          aws-region: us-east-1
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        run: terraform plan
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
